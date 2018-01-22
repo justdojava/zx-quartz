@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TaskRecordsMapper">
+	
+	<sql id="recordsInfo">
+		taskNo,timeKeyValue,executeTime,taskStatus,failcount,failReason,createTime,lastModifyTime
+	</sql>
+  	
+  	<select id="selectByTaskNo" parameterType="HashMap" resultType="com.zhongxin.quartz.entity.TaskRecordsEntity">
+  		select 
+  			id,<include refid="recordsInfo"/>
+  		from 
+  			quartz_task_records 
+  		where 
+  			taskNo = #{taskNo} and
+  			timeKeyValue = #{timeKeyValue}
+  	</select>
+  	
+  	<select id="selectListByTaskNo" parameterType="HashMap" resultType="com.zhongxin.quartz.entity.TaskRecordsEntity">
+  		select
+  			id,
+  			taskNo,
+  			timeKeyValue,
+  			FROM_UNIXTIME(FLOOR(executeTime/1000),'%Y-%m-%d %H:%i:%s') as executeTime,
+  			taskStatus,
+  			failcount,
+  			TIME_FORMAT(TIMEDIFF(FROM_UNIXTIME(FLOOR(lastModifyTime/1000),'%Y-%m-%d %H:%i:%s'),FROM_UNIXTIME(FLOOR(createTime/1000),'%Y-%m-%d %H:%i:%s')),'%H:%i:%s') as time
+  		from
+  			quartz_task_records 
+  		where
+  			taskNo = #{taskNo}
+  			<if test="taskStatus != null and taskStatus != ''">
+  				and taskStatus = #{taskStatus}
+  			</if>
+  		order by createTime desc
+  		limit #{currentPage},10
+  	</select>
+  	
+  	<select id="selectCountByTaskNo" parameterType="HashMap" resultType="Integer">
+  		select
+  			count(1) as count
+  		from
+  			quartz_task_records
+  		where
+  			taskNo = #{taskNo}
+  			<if test="taskStatus != null and taskStatus != ''">
+  				and taskStatus = #{taskStatus}
+  			</if>
+  	</select>
+  	
+  	<select id="selectByTaskNoAndStatus" parameterType="String" resultType="com.zhongxin.quartz.entity.TaskRecordsEntity">
+  		select 
+  			id,<include refid="recordsInfo"/>
+  		from 
+  			quartz_task_records 
+  		where 
+  			taskNo = #{taskNo} and
+  			taskStatus = 'INIT'
+  		order by createTime desc
+  	</select>
+
+	<insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.zhongxin.quartz.entity.TaskRecordsEntity" >
+		insert into quartz_task_records
+		(
+			<include refid="recordsInfo"/>
+		) 
+		values
+		(
+			#{taskNo},
+			#{timeKeyValue},
+			#{executeTime},
+			#{taskStatus},
+			#{failcount},
+			#{failReason},
+			#{createTime},
+			#{lastModifyTime}
+		)
+	</insert>
+	
+	<update id="updateById" parameterType="com.zhongxin.quartz.entity.TaskRecordsEntity">
+		update
+			quartz_task_records
+		set
+			failcount = #{failcount},
+			taskStatus = #{taskStatus},
+			lastModifyTime = #{lastModifyTime}
+		where 
+			id = #{id}
+	</update>
+	
+</mapper>

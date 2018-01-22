@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TaskInformationsMapper">
+	
+	<sql id="taskInfo">
+		version,taskNo,taskName,schedulerRule,frozenStatus,executorNo,sendType,frozenTime,unfrozenTime,
+		createTime,lastModifyTime,url,executeParamter,timeKey
+	</sql> 
+  
+	<select id="selectTaskInfoList" resultType="com.zhongxin.quartz.entity.TaskInformationsEntity">
+  		select 
+  			id,<include refid="taskInfo"/>
+  		from 
+  			quartz_task_informations 
+  		where 
+  			frozenStatus = 'UNFROZEN'
+  	</select>
+  	
+  	<select id="selectAll" parameterType="HashMap" resultType="com.zhongxin.quartz.vo.TaskInformationsVo">
+  		select 
+  			id,
+  			taskNo,
+  			taskName,
+  			schedulerRule,
+  			(case frozenStatus when 'FROZEN' then '已冻结' when 'UNFROZEN' then '未冻结' else '' end) as frozenStatus,
+  			executorNo,
+  			sendType,
+  			url,
+  			executeParamter,
+  			timeKey,
+  			FROM_UNIXTIME(FLOOR(lastModifyTime/1000),'%Y-%m-%d %H:%i:%s') as lastModifyTime
+  		from 
+  			quartz_task_informations
+		order by frozenStatus desc,lastModifyTime desc
+		limit #{currentPage},10
+  	</select>
+  	
+  	<select id="selectDetail" parameterType="String" resultType="com.zhongxin.quartz.vo.TaskInformationsDetailVo">
+  		select 
+  			id,
+  			taskNo,
+  			taskName,
+  			schedulerRule,
+  			(case frozenStatus when 'FROZEN' then '已冻结' when 'UNFROZEN' then '未冻结' else '' end) as frozenStatus,
+  			executorNo,
+  			FROM_UNIXTIME(FLOOR(frozenTime/1000),'%Y-%m-%d %H:%i:%s') as frozenTime,
+  			FROM_UNIXTIME(FLOOR(unfrozenTime/1000),'%Y-%m-%d %H:%i:%s') as unfrozenTime,
+  			sendType,
+  			url,
+  			executeParamter,
+  			timeKey,
+  			FROM_UNIXTIME(FLOOR(lastModifyTime/1000),'%Y-%m-%d %H:%i:%s') as lastModifyTime,
+  			FROM_UNIXTIME(FLOOR(createTime/1000),'%Y-%m-%d %H:%i:%s') as createTime,
+  			(select FROM_UNIXTIME(FLOOR(executeTime/1000),'%Y-%m-%d %H:%i:%s') from quartz_task_records r where r.taskNo = i.taskNo order by executeTime desc limit 1) as preExecuteTime,
+  			(select case taskStatus when 'SUCCESS' then '成功' when 'FAILED' then '失败' when 'INIT' then '初始' else '' end from quartz_task_records r where r.taskNo = i.taskNo order by executeTime desc limit 1) as taskStatus
+  		from 
+  			quartz_task_informations i
+		where
+			taskNo = #{taskNo}
+  	</select>
+  	
+  	<select id="selectTotalCount" resultType="int">
+  		select
+  			count(1)
+  		from
+  			quartz_task_informations 
+  	</select>
+  	
+  	<select id="selectByTaskNo" parameterType="String" resultType="com.zhongxin.quartz.entity.TaskInformationsEntity">
+  		select 
+  			id,<include refid="taskInfo"/>
+  		from 
+  			quartz_task_informations 
+  		where 
+  			taskNo = #{taskNo}
+  	</select>
+  	
+  	<select id="selectById" parameterType="long" resultType="com.zhongxin.quartz.entity.TaskInformationsEntity">
+  		select
+  			id,<include refid="taskInfo"/>
+  		from
+  			quartz_task_informations
+  		where 
+  			id = #{id,jdbcType=BIGINT}
+  	</select>
+  	
+  	<insert id="addTaskInfo" useGeneratedKeys="true" keyProperty="id" parameterType="com.zhongxin.quartz.entity.TaskInformationsEntity" >
+  		insert into quartz_task_informations
+  		(
+  			<include refid="taskInfo"/>
+  		)
+  		values
+  		(
+  			#{version},
+  			#{taskNo},
+  			#{taskName},
+  			#{schedulerRule},
+  			#{frozenStatus},
+  			#{executorNo},
+  			#{sendType},
+  			#{frozenTime},
+  			#{unfrozenTime},
+  			#{createTime},
+  			#{lastModifyTime},
+  			#{url},
+  			#{executeParamter},
+  			#{timeKey}
+  		)
+  	</insert>
+  	
+  	<update id="updateById" parameterType="com.zhongxin.quartz.entity.TaskInformationsEntity">
+  		update
+  			quartz_task_informations
+  		set
+  			<if test="null != frozenStatus">
+  				frozenStatus = #{frozenStatus},
+  			</if>
+  			<if test="null != frozenTime">
+  				frozenTime = #{frozenTime},
+  			</if>
+  			<if test="null != unfrozenTime">
+  				unfrozenTime = #{unfrozenTime},
+  			</if>
+  			<if test="null != taskNo and '' != taskNo">
+  				taskNo = #{taskNo},
+  			</if>
+  			<if test="null != taskName and '' != taskName" >
+  				taskName = #{taskName},
+  			</if>
+  			<if test="null != schedulerRule and '' != schedulerRule">
+  				schedulerRule = #{schedulerRule},
+  			</if>
+  			<if test="null != executorNo and '' != executorNo">
+  				executorNo = #{executorNo},
+  			</if>
+  			<if test="null != sendType and '' != sendType">
+  				sendType = #{sendType},
+  			</if>
+  			<if test="null != timeKey and '' != timeKey">
+  				timeKey = #{timeKey},
+  			</if>
+  			lastModifyTime = #{lastModifyTime},
+  			url = #{url},
+  			executeParamter = #{executeParamter},
+  			version = #{version}+1
+  		where 
+  			id = #{id} and 
+  			version = #{version}
+  	</update>
+
+</mapper>
